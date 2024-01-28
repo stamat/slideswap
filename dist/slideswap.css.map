@@ -1,1 +1,1 @@
-{"version":3,"sourceRoot":"","sources":[],"names":[],"mappings":";","sourcesContent":[]}
+{"version":3,"sourceRoot":"","sources":["file:///Users/stamat/Sites/localhost/slideswap/slideswap.scss"],"names":[],"mappings":";AAAA;EACE;EACA;;;AAGF;EACE;EACA;EACA;EACA;EACA;EACA","sourcesContent":[".slideswap-slides {\n  position: relative;\n  transition: height 0.5s ease-in-out;\n}\n\n.slideswap-slide {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: auto;\n  transition: opacity 0.5s ease-in-out;\n}\n"]}

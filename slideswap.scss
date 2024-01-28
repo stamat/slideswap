@@ -1,0 +1,13 @@
+.slideswap-slides {
+  position: relative;
+  transition: height 0.5s ease-in-out;
+}
+
+.slideswap-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  transition: opacity 0.5s ease-in-out;
+}
