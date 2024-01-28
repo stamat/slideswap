@@ -1,0 +1,34 @@
+{
+  "scripts": [{
+    "in": "build/iife.js",
+    "out": "dist/slideswap.js",
+    "options": {
+      "sourcemap": true,
+      "minify": true,
+      "format": "iife",
+      "target": "es2019"
+    }
+  }],
+  "styles": [{
+    "in": "slideswap.scss",
+    "out": "dist/slideswap.css",
+    "options": {
+      "minify": true,
+      "sourcemap": true
+    }
+  }],
+  "banner": "/* {{ name }} v{{ version }} | {{ homepage }} | {{ license }} License */",
+  "serve" : {
+    "port": 4040,
+    "base": "/"
+  },
+  "livereload": true,
+  "watch": [
+    "slideswap.js",
+    "slideswap.scss",
+    "slideswap.html"
+  ],
+  "includePaths": [
+    "node_modules"
+  ]
+}

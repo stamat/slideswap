@@ -1,0 +1,40 @@
+{
+  "name": "slideswap",
+  "version": "1.0.0",
+  "description": "A simple, lightweight, dependency-free, ES6 module for swapping slides.",
+  "main": "slideswap.js",
+  "style": "slideswap.scss",
+  "homepage": "https://stamat.github.io/slideswap/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stamat/slideswap.git"
+  },
+  "keywords": [
+    "slide",
+    "rotator",
+    "swap",
+    "slides",
+    "slideshow",
+    "javascript",
+    "esm",
+    "es6",
+    "iife",
+    "rotation"
+  ],
+  "author": "Nikola Stamatovic <@stamat>",
+  "contributors": [],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/stamat/slideswap/issues"
+  },
+  "scripts": {
+    "dev": "poops",
+    "build": "poops -b"
+  },
+  "devDependencies": {
+    "poops": "^1.0.18"
+  },
+  "dependencies": {
+    "book-of-spells": "^1.0.22"
+  }
+}
