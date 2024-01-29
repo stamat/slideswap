@@ -20,3 +20,28 @@
   position: relative;
   pointer-events: all;
 }
+
+.slideswap-has-swipe {
+  cursor: grab;
+  cursor: -webkit-grab;
+
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+
+  .slideswap-slide {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+
+    img,
+    svg {
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+  }
+}

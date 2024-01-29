@@ -3,9 +3,13 @@ import { shallowMerge, getTransitionDurations, onSwipe } from 'book-of-spells'
 /**
  * @name Slideswap
  * @description A simple slideshow plugin that cross fades between slides.
+ * @param {HTMLElement} element - The element to initialize as a slideshow
+ * @param {Object} options - The options for the slideshow
+ * @param {Boolean} [options.infinite=false] - Whether or not the slideshow should loop infinitely
+ * @param {String} [options.activeClass='slideswap-current-slide'] - The class to apply to the current slide
  * @todo bullet navigation
- * @todo swipe navigation
  * @todo autoplay
+ * @todo events
  */
 export default class Slideswap {
   constructor(element, options) {
@@ -16,12 +20,14 @@ export default class Slideswap {
     this.options = {
       infinite: false,
       activeClass: 'slideswap-current-slide',
-      slideClass: 'js-slideswap',
+      slideSelector: '.js-slideswap',
       start: 0,
       adaptiveHeight: true,
       next: null,
       prev: null,
-      imageClass: 'js-slideswap-image',
+      imageSelector: '.js-slideswap-image',
+      swipe: true,
+      swipeClass: 'slideswap-has-swipe'
     }
 
     if (typeof element === 'string') this.element = document.querySelector(element)
@@ -44,11 +50,27 @@ export default class Slideswap {
 
     this.bindControls()
 
-    this.slides = this.element.querySelectorAll(`.${this.options.slideClass}`)
+    this.slides = this.element.querySelectorAll(this.options.slideSelector)
     this.setCurrentSlide(this.options.start)
     this.element.setAttribute('data-slideswap-initialized', 'true')
 
     this.setupSlides()
+    
+    if (this.options.swipe) this.setupSwipe()
+    
+  }
+
+  setupSwipe() {
+    onSwipe(this.element, (e) => {
+      if (!e.horizontal) return
+      if (e.horizontalDirection === 'left') {
+        this.next()
+      } else {
+        this.previous()
+      }
+    }, 50, 1000)
+
+    this.element.classList.add(this.options.swipeClass)
   }
 
   bindControls() {
@@ -79,6 +101,15 @@ export default class Slideswap {
         slide.style.opacity = 0
         slide.style.pointerEvents = 'none'
       }
+
+      if (this.options.swipe) {
+        const slideImages = slide.querySelectorAll(`img`)
+        for (let i = 0; i < slideImages.length; i++) {
+          const image = slideImages[i]
+          image.draggable = false
+          image.setAttribute('draggable', 'false')
+        }
+      }
     }
 
     if (!this.options.adaptiveHeight) {
@@ -105,7 +136,7 @@ export default class Slideswap {
     if (this.options.adaptiveHeight) {
       this.element.style.height = `${currentSlide.offsetHeight}px`
 
-      const image = this.getCurrentSlide().querySelector(`.${this.options.imageClass}`)
+      const image = this.getCurrentSlide().querySelector(this.options.imageSelector)
       if (image) {
         image.addEventListener('load', () => {
           if (!reset) this.element.style.height = `${currentSlide.offsetHeight}px`

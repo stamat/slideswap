@@ -21,4 +21,26 @@
   position: relative;
   pointer-events: all;
 }
+
+.slideswap-has-swipe {
+  cursor: grab;
+  cursor: -webkit-grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+.slideswap-has-swipe .slideswap-slide {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+.slideswap-has-swipe .slideswap-slide img,
+.slideswap-has-swipe .slideswap-slide svg {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
 /*# sourceMappingURL=slideswap.css.map */
