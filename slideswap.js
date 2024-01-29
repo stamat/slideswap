@@ -1,8 +1,11 @@
-import { shallowMerge } from 'book-of-spells'
+import { shallowMerge, getTransitionDurations, onSwipe } from 'book-of-spells'
 
 /**
  * @name Slideswap
- * @description
+ * @description A simple slideshow plugin that cross fades between slides.
+ * @todo bullet navigation
+ * @todo swipe navigation
+ * @todo autoplay
  */
 export default class Slideswap {
   constructor(element, options) {
@@ -20,6 +23,7 @@ export default class Slideswap {
       prev: null,
       imageClass: 'js-slideswap-image',
     }
+
     if (typeof element === 'string') this.element = document.querySelector(element)
 
     if (!this.element || !(this.element instanceof HTMLElement)) {
@@ -29,6 +33,9 @@ export default class Slideswap {
     if (this.element.getAttribute('data-slideswap-initialized') === 'true') {
       throw new Error('slideswap: element already initialized')
     }
+
+    this.transitionDuration = getTransitionDurations(this.element)
+    this.transitionTimer = null
 
     shallowMerge(
       this.options,
@@ -58,6 +65,20 @@ export default class Slideswap {
       const slide = this.slides[i]
       slide.setAttribute('data-slideswap-index', i)
       this.maxHeight = Math.max(this.maxHeight, slide.offsetHeight)
+
+      slide.style.top = 0
+      slide.style.left = 0
+      slide.style.width = '100%'
+      slide.style.height = 'auto'
+      slide.style.overflow = 'hidden'
+
+      if (i === this.currentIndex) {
+        slide.style.position = 'relative'
+      } else {
+        slide.style.position = 'absolute'
+        slide.style.opacity = 0
+        slide.style.pointerEvents = 'none'
+      }
     }
 
     if (!this.options.adaptiveHeight) {
@@ -67,6 +88,9 @@ export default class Slideswap {
 
   setCurrentSlide(index) {
     if (index < 0 || index >= this.slides.length) return
+    
+    if (this.options.adaptiveHeight) this.element.style.height = `${this.slides[this.currentIndex].offsetHeight}px`
+
     this.currentIndex = index
     const currentSlide = this.slides[index]
     currentSlide.classList.add(this.options.activeClass)
@@ -75,6 +99,8 @@ export default class Slideswap {
     currentSlide.style.zIndex = 1
     currentSlide.style.opacity = 1
     currentSlide.style.pointerEvents = 'auto'
+    currentSlide.style.position = 'absolute'
+    let reset = false
 
     if (this.options.adaptiveHeight) {
       this.element.style.height = `${currentSlide.offsetHeight}px`
@@ -82,9 +108,22 @@ export default class Slideswap {
       const image = this.getCurrentSlide().querySelector(`.${this.options.imageClass}`)
       if (image) {
         image.addEventListener('load', () => {
-          this.element.style.height = `${currentSlide.offsetHeight}px`
+          if (!reset) this.element.style.height = `${currentSlide.offsetHeight}px`
         })
       }
+
+      if (this.transitionTimer) {
+        clearTimeout(this.transitionTimer)
+        this.transitionTimer = null
+      }
+   
+      const time  = new Date().getTime()
+      this.transitionTimer = setTimeout(() => {
+        currentSlide.style.position = 'relative'
+        this.element.style.height = 'initial'
+        reset = true
+        this.transitionTimer = null
+      }, this.transitionDuration['height'])
     }
 
     for (let i = 0; i < this.slides.length; i++) {
@@ -96,6 +135,7 @@ export default class Slideswap {
       slide.style.zIndex = 0
       slide.style.opacity = 0
       slide.style.pointerEvents = 'none'
+      slide.style.position = 'absolute'
     }
   }
 

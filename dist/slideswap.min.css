@@ -1,2 +1,2 @@
 /* slideswap v1.0.0 | https://stamat.github.io/slideswap/ | MIT License */
-.slideswap-slides{position:relative;transition:height .5s ease-in-out}.slideswap-slide{position:absolute;top:0;left:0;width:100%;height:auto;transition:opacity .5s ease-in-out}
+.slideswap-slides{position:relative;transition:height .5s ease-in-out}.slideswap-slide{opacity:0;overflow:hidden;position:absolute;width:100%;height:auto;top:0;left:0;pointer-events:none;transition:opacity .5s ease-in-out}.slideswap-slide:first-child{opacity:1;position:relative;pointer-events:all}

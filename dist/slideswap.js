@@ -8,6 +8,36 @@
     return target;
   }
 
+  // node_modules/book-of-spells/src/dom.mjs
+  function cssTimeToMilliseconds(duration) {
+    const regExp = new RegExp("([0-9.]+)([a-z]+)", "i");
+    const matches = regExp.exec(duration);
+    if (!matches)
+      return 0;
+    const unit = matches[2];
+    switch (unit) {
+      case "ms":
+        return parseFloat(matches[1]);
+      case "s":
+        return parseFloat(matches[1]) * 1e3;
+      default:
+        return 0;
+    }
+  }
+  function getTransitionDurations(element) {
+    if (!element) {
+    }
+    const styles = getComputedStyle(element);
+    const transitionProperties = styles.getPropertyValue("transition-property").split(",");
+    const transitionDurations = styles.getPropertyValue("transition-duration").split(",");
+    const map = {};
+    for (let i = 0; i < transitionProperties.length; i++) {
+      const property = transitionProperties[i].trim();
+      map[property] = transitionDurations.hasOwnProperty(i) ? cssTimeToMilliseconds(transitionDurations[i].trim()) : null;
+    }
+    return map;
+  }
+
   // slideswap.js
   var Slideswap = class {
     constructor(element, options) {
@@ -33,6 +63,8 @@
       if (this.element.getAttribute("data-slideswap-initialized") === "true") {
         throw new Error("slideswap: element already initialized");
       }
+      this.transitionDuration = getTransitionDurations(this.element);
+      this.transitionTimer = null;
       shallowMerge(
         this.options,
         options
@@ -58,6 +90,18 @@
         const slide = this.slides[i];
         slide.setAttribute("data-slideswap-index", i);
         this.maxHeight = Math.max(this.maxHeight, slide.offsetHeight);
+        slide.style.top = 0;
+        slide.style.left = 0;
+        slide.style.width = "100%";
+        slide.style.height = "auto";
+        slide.style.overflow = "hidden";
+        if (i === this.currentIndex) {
+          slide.style.position = "relative";
+        } else {
+          slide.style.position = "absolute";
+          slide.style.opacity = 0;
+          slide.style.pointerEvents = "none";
+        }
       }
       if (!this.options.adaptiveHeight) {
         this.element.style.height = `${this.maxHeight}px`;
@@ -66,6 +110,8 @@
     setCurrentSlide(index) {
       if (index < 0 || index >= this.slides.length)
         return;
+      if (this.options.adaptiveHeight)
+        this.element.style.height = `${this.slides[this.currentIndex].offsetHeight}px`;
       this.currentIndex = index;
       const currentSlide = this.slides[index];
       currentSlide.classList.add(this.options.activeClass);
@@ -74,14 +120,28 @@
       currentSlide.style.zIndex = 1;
       currentSlide.style.opacity = 1;
       currentSlide.style.pointerEvents = "auto";
+      currentSlide.style.position = "absolute";
+      let reset = false;
       if (this.options.adaptiveHeight) {
         this.element.style.height = `${currentSlide.offsetHeight}px`;
         const image = this.getCurrentSlide().querySelector(`.${this.options.imageClass}`);
         if (image) {
           image.addEventListener("load", () => {
-            this.element.style.height = `${currentSlide.offsetHeight}px`;
+            if (!reset)
+              this.element.style.height = `${currentSlide.offsetHeight}px`;
           });
         }
+        if (this.transitionTimer) {
+          clearTimeout(this.transitionTimer);
+          this.transitionTimer = null;
+        }
+        const time = (/* @__PURE__ */ new Date()).getTime();
+        this.transitionTimer = setTimeout(() => {
+          currentSlide.style.position = "relative";
+          this.element.style.height = "initial";
+          reset = true;
+          this.transitionTimer = null;
+        }, this.transitionDuration["height"]);
       }
       for (let i = 0; i < this.slides.length; i++) {
         const slide = this.slides[i];
@@ -93,6 +153,7 @@
         slide.style.zIndex = 0;
         slide.style.opacity = 0;
         slide.style.pointerEvents = "none";
+        slide.style.position = "absolute";
       }
     }
     getCurrentIndex() {

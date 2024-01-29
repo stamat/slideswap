@@ -5,11 +5,20 @@
 }
 
 .slideswap-slide {
+  opacity: 0;
+  overflow: hidden;
   position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: auto;
+  top: 0;
+  left: 0;
+  pointer-events: none;
   transition: opacity 0.5s ease-in-out;
+}
+
+.slideswap-slide:first-child {
+  opacity: 1;
+  position: relative;
+  pointer-events: all;
 }
 /*# sourceMappingURL=slideswap.css.map */
