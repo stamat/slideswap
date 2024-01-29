@@ -173,7 +173,6 @@ export default class Slideswap {
         this.transitionTimer = null
       }
    
-      const time  = new Date().getTime()
       this.transitionTimer = setTimeout(() => {
         currentSlide.style.position = 'relative'
         this.element.style.height = 'initial'
