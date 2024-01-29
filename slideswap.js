@@ -7,6 +7,24 @@ import { shallowMerge, getTransitionDurations, onSwipe } from 'book-of-spells'
  * @param {Object} options - The options for the slideshow
  * @param {Boolean} [options.infinite=false] - Whether or not the slideshow should loop infinitely
  * @param {String} [options.activeClass='slideswap-current-slide'] - The class to apply to the current slide
+ * @param {String} [options.slideSelector='.js-slideswap'] - The selector for the slides
+ * @param {Number} [options.start=0] - The index of the slide to start on
+ * @param {Boolean} [options.adaptiveHeight=true] - Whether or not the slideshow should adapt to the height of the current slide
+ * @param {HTMLElement|String} [options.next=null] - The element to use as the next button or selector for the next button
+ * @param {HTMLElement|String} [options.prev=null] - The element to use as the previous button or selector for the previous button
+ * @param {String} [options.imageSelector='.js-slideswap-image'] - The selector for the images in the slides
+ * @param {Boolean} [options.swipe=true] - Whether or not the slideshow should be swipeable
+ * @param {String} [options.swipeClass='slideswap-has-swipe'] - The class to apply to the slideshow when it is swipeable
+ * @param {String} [options.swipeActiveClass='slideswap-swipe-active'] - The class to apply to the slideshow when it is being swiped
+ * @param {Number} [options.swipeThreshold=100] - The minimum distance the swipe must travel to trigger a slide change
+ * @param {Number} [options.swipeTimeThreshold=1000] - The maximum amount of time the swipe can take to trigger a slide change in milliseconds. 0 disables this.
+ * @example
+ * const slideshows = document.querySelectorAll('.js-slideshow')
+ * for (let i = 0; i < slideshows.length; i++) {
+ *  const slideshow = new Slideswap(slideshows[i], {
+ *    infinite: true,
+ *  })
+ * }
  * @todo bullet navigation
  * @todo autoplay
  * @todo events
@@ -27,7 +45,10 @@ export default class Slideswap {
       prev: null,
       imageSelector: '.js-slideswap-image',
       swipe: true,
-      swipeClass: 'slideswap-has-swipe'
+      swipeClass: 'slideswap-has-swipe',
+      swipeActiveClass: 'slideswap-swipe-active',
+      swipeThreshold: 100,
+      swipeTimeThreshold: 1000
     }
 
     if (typeof element === 'string') this.element = document.querySelector(element)
@@ -63,12 +84,16 @@ export default class Slideswap {
   setupSwipe() {
     onSwipe(this.element, (e) => {
       if (!e.horizontal) return
-      if (e.horizontalDirection === 'left') {
-        this.next()
-      } else {
-        this.previous()
-      }
-    }, 50, 1000)
+      e.horizontalDirection === 'left' ? this.next() : this.previous()
+    }, this.options.swipeThreshold, this.options.swipeTimeThreshold)
+
+    this.element.addEventListener('swipestart', () => {
+      this.element.classList.add(this.options.swipeActiveClass)
+    })
+
+    this.element.addEventListener('swipeend', () => {
+      this.element.classList.remove(this.options.swipeActiveClass)
+    })
 
     this.element.classList.add(this.options.swipeClass)
   }

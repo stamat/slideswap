@@ -25,6 +25,21 @@
   cursor: grab;
   cursor: -webkit-grab;
 
+  * {
+    cursor: grab;
+    cursor: -webkit-grab;
+  }
+
+  &.slideswap-swipe-active {
+    cursor: grabbing;
+    cursor: -webkit-grabbing;
+
+    * {
+      cursor: grabbing;
+      cursor: -webkit-grabbing;
+    }
+  }
+
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;

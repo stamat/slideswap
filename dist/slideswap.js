@@ -44,18 +44,25 @@
     let endY = 0;
     let startTime = 0;
     let endTime = 0;
+    if (!element)
+      return;
+    if (element.getAttribute("swipe-enabled") === "true")
+      return;
+    element.setAttribute("swipe-enabled", "true");
     const handleStart = function(e) {
       const carrier = e.type === "touchstart" ? e.touches[0] : e;
       startX = carrier.clientX;
       startY = carrier.clientY;
       startTime = Date.now();
+      element.dispatchEvent(new CustomEvent("swipestart", { detail: { startX, startY, startTime } }));
     };
     const handleEnd = function(e) {
-      const carrier = e.type === "touchmove" ? e.touches[0] : e;
+      const carrier = e.type === "touchend" ? e.touches[0] : e;
       endX = carrier.clientX;
       endY = carrier.clientY;
       endTime = Date.now();
       handleSwipeGesture();
+      element.dispatchEvent(new CustomEvent("swipeend", { detail: { startX, startY, startTime, endX, endY, endTime } }));
     };
     const handleSwipeGesture = function() {
       const deltaX = Math.abs(endX - startX);
@@ -70,8 +77,11 @@
         direction.push(left ? "left" : "right");
       if (vertical)
         direction.push(up ? "up" : "down");
-      if (direction.length && callback && timeElapsed <= timeThreshold) {
-        callback({
+      let condition = direction.length && callback;
+      if (timeThreshold)
+        condition = condition && timeElapsed <= timeThreshold;
+      if (condition) {
+        const res = {
           target: element,
           deltaX,
           deltaY,
@@ -87,17 +97,20 @@
           direction: direction.length === 1 ? direction[0] : direction,
           timeElapsed,
           timeThreshold
-        });
+        };
+        callback(res);
+        delete res.target;
+        element.dispatchEvent(new CustomEvent("swipe", { detail: res }));
       }
     };
     element.addEventListener("touchstart", handleStart);
-    element.addEventListener("touchmove", handleEnd);
+    element.addEventListener("touchend", handleEnd);
     element.addEventListener("mousedown", handleStart);
     element.addEventListener("mouseup", handleEnd);
     return {
       destroy: function() {
         element.removeEventListener("touchstart", handleStart);
-        element.removeEventListener("touchmove", handleEnd);
+        element.removeEventListener("touchend", handleEnd);
         element.removeEventListener("mousedown", handleStart);
         element.removeEventListener("mouseup", handleEnd);
       }
@@ -121,7 +134,10 @@
         prev: null,
         imageSelector: ".js-slideswap-image",
         swipe: true,
-        swipeClass: "slideswap-has-swipe"
+        swipeClass: "slideswap-has-swipe",
+        swipeActiveClass: "slideswap-swipe-active",
+        swipeThreshold: 100,
+        swipeTimeThreshold: 1e3
       };
       if (typeof element === "string")
         this.element = document.querySelector(element);
@@ -149,12 +165,14 @@
       onSwipe(this.element, (e) => {
         if (!e.horizontal)
           return;
-        if (e.horizontalDirection === "left") {
-          this.next();
-        } else {
-          this.previous();
-        }
-      }, 50, 1e3);
+        e.horizontalDirection === "left" ? this.next() : this.previous();
+      }, this.options.swipeThreshold, this.options.swipeTimeThreshold);
+      this.element.addEventListener("swipestart", () => {
+        this.element.classList.add(this.options.swipeActiveClass);
+      });
+      this.element.addEventListener("swipeend", () => {
+        this.element.classList.remove(this.options.swipeActiveClass);
+      });
       this.element.classList.add(this.options.swipeClass);
     }
     bindControls() {
