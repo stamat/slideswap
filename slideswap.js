@@ -1,8 +1,8 @@
-import { shallowMerge, getTransitionDurations, onSwipe } from 'book-of-spells'
+import { shallowMerge, getTransitionDurations, onSwipe, insertBeforeElement } from 'book-of-spells'
 
 /**
  * @name Slideswap
- * @description A simple slideshow plugin that cross fades between slides.
+ * @description A simple slideshow that cross fades between slides.
  * @param {HTMLElement} element - The element to initialize as a slideshow
  * @param {Object} options - The options for the slideshow
  * @param {Boolean} [options.infinite=false] - Whether or not the slideshow should loop infinitely
@@ -18,12 +18,21 @@ import { shallowMerge, getTransitionDurations, onSwipe } from 'book-of-spells'
  * @param {String} [options.swipeActiveClass='slideswap-swipe-active'] - The class to apply to the slideshow when it is being swiped
  * @param {Number} [options.swipeThreshold=100] - The minimum distance the swipe must travel to trigger a slide change
  * @param {Number} [options.swipeTimeThreshold=1000] - The maximum amount of time the swipe can take to trigger a slide change in milliseconds. 0 disables this.
+ * @returns {Slideswap} The initialized slideshow
  * @example
  * const slideshows = document.querySelectorAll('.js-slideshow')
  * for (let i = 0; i < slideshows.length; i++) {
  *  const slideshow = new Slideswap(slideshows[i], {
  *    infinite: true,
  *  })
+ * 
+ *  // slideshow.next()
+ *  // slideshow.previous()
+ *  // slideshow.getCurrentIndex()
+ *  // slideshow.getCurrentSlide()
+ *  // slideshow.addSlide(slide)
+ *  // slideshow.removeSlide(index)
+ *  // slideshow.destroy()
  * }
  * @todo bullet navigation
  * @todo autoplay
@@ -78,7 +87,6 @@ export default class Slideswap {
     this.setupSlides()
     
     if (this.options.swipe) this.setupSwipe()
-    
   }
 
   setupSwipe() {
@@ -108,6 +116,7 @@ export default class Slideswap {
   }
 
   setupSlides() {
+    if (!this.slides || !this.slides.length) return
     for (let i = 0; i < this.slides.length; i++) {
       const slide = this.slides[i]
       slide.setAttribute('data-slideswap-index', i)
@@ -143,11 +152,18 @@ export default class Slideswap {
   }
 
   setCurrentSlide(index) {
+    if (!this.slides || !this.slides.length) return
+    if (this.transitionTimer) {
+      clearTimeout(this.transitionTimer)
+      this.transitionTimer = null
+    }
+    if (index === undefined || index === null) return
     if (index < 0 || index >= this.slides.length) return
     
     if (this.options.adaptiveHeight) this.element.style.height = `${this.slides[this.currentIndex].offsetHeight}px`
 
     this.currentIndex = index
+    this.element.setAttribute('data-slideswap-current-index', this.currentIndex)
     const currentSlide = this.slides[index]
     currentSlide.classList.add(this.options.activeClass)
     currentSlide.removeAttribute('aria-hidden')
@@ -166,11 +182,6 @@ export default class Slideswap {
         image.addEventListener('load', () => {
           if (!reset) this.element.style.height = `${currentSlide.offsetHeight}px`
         })
-      }
-
-      if (this.transitionTimer) {
-        clearTimeout(this.transitionTimer)
-        this.transitionTimer = null
       }
    
       this.transitionTimer = setTimeout(() => {
@@ -195,19 +206,29 @@ export default class Slideswap {
   }
 
   getCurrentIndex() {
+    if (!this.slides || !this.slides.length) return
     return this.currentIndex
   }
 
   getCurrentSlide() {
+    if (!this.slides || !this.slides.length) return
     return this.slides[this.currentIndex]
   }
 
   getNextIndex() {
-    return this.options.infinite ? (this.currentIndex + 1) % this.slides.length : this.currentIndex + 1
+    if (!this.slides || !this.slides.length) return
+    const nextIndex = this.currentIndex + 1
+    if (this.options.infinite && nextIndex >= this.slides.length) return 0
+    if (nextIndex >= this.slides.length) return this.currentIndex
+    return nextIndex
   }
 
   getPreviousIndex() {
-    return this.options.infinite ? (this.currentIndex - 1 + this.slides.length) % this.slides.length : this.currentIndex - 1
+    if (!this.slides || !this.slides.length) return
+    const previousIndex = this.currentIndex - 1
+    if (this.options.infinite && previousIndex < 0) return this.slides.length - 1
+    if (previousIndex < 0) return this.currentIndex
+    return previousIndex
   }
 
   next() {
@@ -229,16 +250,45 @@ export default class Slideswap {
     if (this.options.prev) this.options.prev.removeEventListener('click', this.previous.bind(this))
   }
 
-  addSlide(slide) {
-    this.element.appendChild(slide)
-    this.slides = this.element.querySelectorAll(`.${this.options.slideClass}`)
+  add(slide, index) {
+    if (!slide || !(slide instanceof HTMLElement)) return
+    if (!this.slides) this.slides = []
+    if (index === undefined || index === null) index = this.slides.length
+    if (index < 0) return
+
+    slide.style.opacity = 0
+
+    if (index > this.slides.length) {
+      this.element.appendChild(slide)
+    } else {
+      if (this.slides[index])
+        insertBeforeElement(this.slides[index], slide)
+      else
+        this.element.appendChild(slide)
+    }
+
+    this.slides = this.element.querySelectorAll(this.options.slideSelector)
+
+    if (index <= this.currentIndex) {
+      const nextIndex = this.currentIndex + 1
+      this.currentIndex = nextIndex >= this.slides.length ? this.slides.length - 1 : nextIndex
+    }
+
     this.setupSlides()
+    this.setCurrentSlide(this.currentIndex)
   }
 
-  removeSlide(index) {
+  remove(index) {
+    if (!this.slides || !this.slides.length) return
     this.element.removeChild(this.slides[index])
-    this.slides = this.element.querySelectorAll(`.${this.options.slideClass}`)
-    if (this.currentIndex >= this.slides.length) this.setCurrentSlide(this.slides.length - 1)
+    this.slides = this.element.querySelectorAll(this.options.slideSelector)
+
+    if (index <= this.currentIndex) {
+      const previousIndex = this.currentIndex - 1
+      this.currentIndex = previousIndex < 0 ? 0 : previousIndex
+    }
+
     this.setupSlides()
+    this.setCurrentSlide(this.currentIndex)
   }
 }

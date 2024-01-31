@@ -87,14 +87,32 @@
         <h2>Installation</h2>
         <p>Install via npm:</p>
         <pre><code class="language-bash">npm install slideswap</code></pre>
-
+        <button class="js-add-slideswap" data-index="0">Add</button>
+        <button class="js-remove-slideswap" data-index="0">Remove</button>
       </main>
     </div>
     <script type="text/javascript">
-      new Slideswap('#slideswap1', {
+      const slider = new Slideswap('#slideswap1', {
         next: '.js-slideswap-next',
         prev: '.js-slideswap-prev',
         infinite: true
+      });
+      
+      const addSlideswap = document.querySelector('.js-add-slideswap');
+      const removeSlideswap = document.querySelector('.js-remove-slideswap');
+      addSlideswap.addEventListener('click', () => {
+        const slide = document.createElement('div');
+        slide.classList.add('js-slideswap', 'slideswap-slide');
+        slide.innerHTML = `
+          <h2>Slide 6</h2>
+          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam euismod, nisl eget aliquam ultricies, nunc nunc aliquet nunc, nec al</p>
+        `;
+        const index = addSlideswap.getAttribute('data-index');
+        slider.add(slide, index);
+      });
+      removeSlideswap.addEventListener('click', () => {
+        const index = removeSlideswap.getAttribute('data-index');
+        slider.remove(index);
       });
     </script>
     <!-- Place this tag in your head or just before your close body tag. -->

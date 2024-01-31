@@ -9,6 +9,11 @@
   }
 
   // node_modules/book-of-spells/src/dom.mjs
+  function insertBeforeElement(targetElement, newElement) {
+    if (!targetElement || !newElement)
+      return;
+    targetElement.parentNode.insertBefore(newElement, targetElement);
+  }
   function cssTimeToMilliseconds(duration) {
     const regExp = new RegExp("([0-9.]+)([a-z]+)", "i");
     const matches = regExp.exec(duration);
@@ -50,14 +55,14 @@
       return;
     element.setAttribute("swipe-enabled", "true");
     const handleStart = function(e) {
-      const carrier = e.type === "touchstart" ? e.touches[0] : e;
+      const carrier = e.touches ? e.touches[0] : e;
       startX = carrier.clientX;
       startY = carrier.clientY;
       startTime = Date.now();
       element.dispatchEvent(new CustomEvent("swipestart", { detail: { startX, startY, startTime } }));
     };
     const handleEnd = function(e) {
-      const carrier = e.type === "touchend" ? e.touches[0] : e;
+      const carrier = e.changedTouches ? e.changedTouches[0] : e;
       endX = carrier.clientX;
       endY = carrier.clientY;
       endTime = Date.now();
@@ -186,6 +191,8 @@
         this.options.prev.addEventListener("click", this.previous.bind(this));
     }
     setupSlides() {
+      if (!this.slides || !this.slides.length)
+        return;
       for (let i = 0; i < this.slides.length; i++) {
         const slide = this.slides[i];
         slide.setAttribute("data-slideswap-index", i);
@@ -216,11 +223,20 @@
       }
     }
     setCurrentSlide(index) {
+      if (!this.slides || !this.slides.length)
+        return;
+      if (this.transitionTimer) {
+        clearTimeout(this.transitionTimer);
+        this.transitionTimer = null;
+      }
+      if (index === void 0 || index === null)
+        return;
       if (index < 0 || index >= this.slides.length)
         return;
       if (this.options.adaptiveHeight)
         this.element.style.height = `${this.slides[this.currentIndex].offsetHeight}px`;
       this.currentIndex = index;
+      this.element.setAttribute("data-slideswap-current-index", this.currentIndex);
       const currentSlide = this.slides[index];
       currentSlide.classList.add(this.options.activeClass);
       currentSlide.removeAttribute("aria-hidden");
@@ -238,10 +254,6 @@
             if (!reset)
               this.element.style.height = `${currentSlide.offsetHeight}px`;
           });
-        }
-        if (this.transitionTimer) {
-          clearTimeout(this.transitionTimer);
-          this.transitionTimer = null;
         }
         this.transitionTimer = setTimeout(() => {
           currentSlide.style.position = "relative";
@@ -264,16 +276,34 @@
       }
     }
     getCurrentIndex() {
+      if (!this.slides || !this.slides.length)
+        return;
       return this.currentIndex;
     }
     getCurrentSlide() {
+      if (!this.slides || !this.slides.length)
+        return;
       return this.slides[this.currentIndex];
     }
     getNextIndex() {
-      return this.options.infinite ? (this.currentIndex + 1) % this.slides.length : this.currentIndex + 1;
+      if (!this.slides || !this.slides.length)
+        return;
+      const nextIndex = this.currentIndex + 1;
+      if (this.options.infinite && nextIndex >= this.slides.length)
+        return 0;
+      if (nextIndex >= this.slides.length)
+        return this.currentIndex;
+      return nextIndex;
     }
     getPreviousIndex() {
-      return this.options.infinite ? (this.currentIndex - 1 + this.slides.length) % this.slides.length : this.currentIndex - 1;
+      if (!this.slides || !this.slides.length)
+        return;
+      const previousIndex = this.currentIndex - 1;
+      if (this.options.infinite && previousIndex < 0)
+        return this.slides.length - 1;
+      if (previousIndex < 0)
+        return this.currentIndex;
+      return previousIndex;
     }
     next() {
       this.setCurrentSlide(this.getNextIndex());
@@ -292,17 +322,43 @@
       if (this.options.prev)
         this.options.prev.removeEventListener("click", this.previous.bind(this));
     }
-    addSlide(slide) {
-      this.element.appendChild(slide);
-      this.slides = this.element.querySelectorAll(`.${this.options.slideClass}`);
+    add(slide, index) {
+      if (!slide || !(slide instanceof HTMLElement))
+        return;
+      if (!this.slides)
+        this.slides = [];
+      if (index === void 0 || index === null)
+        index = this.slides.length;
+      if (index < 0)
+        return;
+      slide.style.opacity = 0;
+      if (index > this.slides.length) {
+        this.element.appendChild(slide);
+      } else {
+        if (this.slides[index])
+          insertBeforeElement(this.slides[index], slide);
+        else
+          this.element.appendChild(slide);
+      }
+      this.slides = this.element.querySelectorAll(this.options.slideSelector);
+      if (index <= this.currentIndex) {
+        const nextIndex = this.currentIndex + 1;
+        this.currentIndex = nextIndex >= this.slides.length ? this.slides.length - 1 : nextIndex;
+      }
       this.setupSlides();
+      this.setCurrentSlide(this.currentIndex);
     }
-    removeSlide(index) {
+    remove(index) {
+      if (!this.slides || !this.slides.length)
+        return;
       this.element.removeChild(this.slides[index]);
-      this.slides = this.element.querySelectorAll(`.${this.options.slideClass}`);
-      if (this.currentIndex >= this.slides.length)
-        this.setCurrentSlide(this.slides.length - 1);
+      this.slides = this.element.querySelectorAll(this.options.slideSelector);
+      if (index <= this.currentIndex) {
+        const previousIndex = this.currentIndex - 1;
+        this.currentIndex = previousIndex < 0 ? 0 : previousIndex;
+      }
       this.setupSlides();
+      this.setCurrentSlide(this.currentIndex);
     }
   };
 
