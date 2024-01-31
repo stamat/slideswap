@@ -135,16 +135,16 @@
       this.options = {
         infinite: false,
         activeClass: "slideswap-current-slide",
-        slideSelector: ".js-slideswap",
+        slideSelector: ":scope > *",
         start: 0,
         adaptiveHeight: true,
         next: null,
         prev: null,
-        imageSelector: ".js-slideswap-image",
+        imageSelector: ":scope > img",
         swipe: true,
         swipeClass: "slideswap-has-swipe",
         swipeActiveClass: "slideswap-swipe-active",
-        swipeThreshold: 100,
+        swipeThreshold: 50,
         swipeTimeThreshold: 1e3
       };
       if (typeof element === "string")
@@ -163,11 +163,15 @@
         this.options,
         options
       );
+      if (this.options.start)
+        this.currentIndex = this.options.start;
       this.bindControls();
       this.slides = this.element.querySelectorAll(this.options.slideSelector);
-      this.setCurrentSlide(this.options.start);
-      this.element.setAttribute("data-slideswap-initialized", "true");
       this.setupSlides();
+      this.setCurrentSlide(this.currentIndex);
+      this.element.setAttribute("data-slideswap-initialized", "true");
+      if (!this.element.classList.contains("slideswap-slides"))
+        this.element.classList.add("slideswap-slides");
       if (this.options.swipe)
         this.setupSwipe();
       this.dispatchEvent("init");
@@ -205,6 +209,10 @@
         const slide = this.slides[i];
         slide.setAttribute("data-slideswap-index", i);
         this.maxHeight = Math.max(this.maxHeight, slide.offsetHeight);
+        if (slide.classList.contains(this.options.activeClass))
+          this.currentIndex = i;
+        if (!slide.classList.contains("slideswap-slide"))
+          slide.classList.add("slideswap-slide");
         slide.style.top = 0;
         slide.style.left = 0;
         slide.style.width = "100%";
@@ -230,6 +238,11 @@
         this.element.style.height = `${this.maxHeight}px`;
       }
       this.transitionSlideDuration = getTransitionDurations(this.getCurrentSlide())["opacity"] || 0;
+    }
+    getSlidesCount() {
+      if (!this.slides || !this.slides.length)
+        return 0;
+      return this.slides.length;
     }
     setCurrentSlide(index) {
       if (!this.slides || !this.slides.length)
@@ -391,6 +404,10 @@
     }
     remove(index) {
       if (!this.slides || !this.slides.length)
+        return;
+      if (index === void 0 || index === null || index >= this.slides.length)
+        index = this.slides.length - 1;
+      if (index < 0)
         return;
       this.element.removeChild(this.slides[index]);
       this.slides = this.element.querySelectorAll(this.options.slideSelector);

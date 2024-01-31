@@ -31,24 +31,29 @@
   -moz-user-select: none;
   -ms-user-select: none;
 }
+
 .slideswap-has-swipe * {
   cursor: grab;
   cursor: -webkit-grab;
 }
+
 .slideswap-has-swipe.slideswap-swipe-active {
   cursor: grabbing;
   cursor: -webkit-grabbing;
 }
+
 .slideswap-has-swipe.slideswap-swipe-active * {
   cursor: grabbing;
   cursor: -webkit-grabbing;
 }
+
 .slideswap-has-swipe .slideswap-slide {
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
 }
+
 .slideswap-has-swipe .slideswap-slide img,
 .slideswap-has-swipe .slideswap-slide svg {
   user-select: none;

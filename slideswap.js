@@ -7,12 +7,12 @@ import { shallowMerge, getTransitionDurations, onSwipe, insertBeforeElement } fr
  * @param {Object} options - The options for the slideshow
  * @param {Boolean} [options.infinite=false] - Whether or not the slideshow should loop infinitely
  * @param {String} [options.activeClass='slideswap-current-slide'] - The class to apply to the current slide
- * @param {String} [options.slideSelector='.js-slideswap'] - The selector for the slides
+ * @param {String} [options.slideSelector=':scope > *'] - The selector for the slides
  * @param {Number} [options.start=0] - The index of the slide to start on
  * @param {Boolean} [options.adaptiveHeight=true] - Whether or not the slideshow should adapt to the height of the current slide
  * @param {HTMLElement|String} [options.next=null] - The element to use as the next button or selector for the next button
  * @param {HTMLElement|String} [options.prev=null] - The element to use as the previous button or selector for the previous button
- * @param {String} [options.imageSelector='.js-slideswap-image'] - The selector for the images in the slides
+ * @param {String} [options.imageSelector=':scope > img'] - The selector for the images in the slides
  * @param {Boolean} [options.swipe=true] - Whether or not the slideshow should be swipeable
  * @param {String} [options.swipeClass='slideswap-has-swipe'] - The class to apply to the slideshow when it is swipeable
  * @param {String} [options.swipeActiveClass='slideswap-swipe-active'] - The class to apply to the slideshow when it is being swiped
@@ -50,16 +50,16 @@ export default class Slideswap {
     this.options = {
       infinite: false,
       activeClass: 'slideswap-current-slide',
-      slideSelector: '.js-slideswap',
+      slideSelector: ':scope > *',
       start: 0,
       adaptiveHeight: true,
       next: null,
       prev: null,
-      imageSelector: '.js-slideswap-image',
+      imageSelector: ':scope > img',
       swipe: true,
       swipeClass: 'slideswap-has-swipe',
       swipeActiveClass: 'slideswap-swipe-active',
-      swipeThreshold: 100,
+      swipeThreshold: 50,
       swipeTimeThreshold: 1000
     }
 
@@ -83,13 +83,15 @@ export default class Slideswap {
       options
     )
 
+    if (this.options.start) this.currentIndex = this.options.start
+
     this.bindControls()
 
     this.slides = this.element.querySelectorAll(this.options.slideSelector)
-    this.setCurrentSlide(this.options.start)
-    this.element.setAttribute('data-slideswap-initialized', 'true')
-
     this.setupSlides()
+    this.setCurrentSlide(this.currentIndex)
+    this.element.setAttribute('data-slideswap-initialized', 'true')
+    if (!this.element.classList.contains('slideswap-slides')) this.element.classList.add('slideswap-slides')
     
     if (this.options.swipe) this.setupSwipe()
     
@@ -142,6 +144,8 @@ export default class Slideswap {
       const slide = this.slides[i]
       slide.setAttribute('data-slideswap-index', i)
       this.maxHeight = Math.max(this.maxHeight, slide.offsetHeight)
+      if (slide.classList.contains(this.options.activeClass)) this.currentIndex = i
+      if (!slide.classList.contains('slideswap-slide')) slide.classList.add('slideswap-slide')
 
       slide.style.top = 0
       slide.style.left = 0
@@ -172,6 +176,11 @@ export default class Slideswap {
     }
 
     this.transitionSlideDuration = getTransitionDurations(this.getCurrentSlide())['opacity'] || 0
+  }
+
+  getSlidesCount() {
+    if (!this.slides || !this.slides.length) return 0
+    return this.slides.length
   }
 
   setCurrentSlide(index) {
@@ -382,6 +391,8 @@ export default class Slideswap {
 
   remove(index) {
     if (!this.slides || !this.slides.length) return
+    if (index === undefined || index === null || index >= this.slides.length) index = this.slides.length - 1
+    if (index < 0) return
     this.element.removeChild(this.slides[index])
     this.slides = this.element.querySelectorAll(this.options.slideSelector)
 

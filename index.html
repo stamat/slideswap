@@ -59,27 +59,27 @@
         </div>
         <h1>slideswap</h1>
         
-        <div class="slideswap-controls" style="margin-bottom: 24px;">
+        <div id="slider-controls-1" class="slideswap-controls" style="margin-bottom: 24px;">
           <button class="js-slideswap-prev">Prev</button>
           <button class="js-slideswap-next">Next</button>
         </div>
-        <div id="slideswap1" class="slideswap-slides">
-          <div class="js-slideswap slideswap-slide">
+        <div id="slideswap-1" class="slideswap-slides">
+          <div class="slideswap-slide">
             <h2>Slide 1</h2>
             <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam euismod, nisl eget aliquam ultricies, nunc nunc aliquet nunc, nec al</p>
           </div>
-          <div class="js-slideswap slideswap-slide">
+          <div class="slideswap-slide">
             <h2>Slide 2</h2>
             <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam euismod, nisl eget aliquam ultricies, nunc nunc aliquet nunc, nec al</p>
             <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam euismod, nisl eget aliquam ultricies, nunc nunc aliquet nunc, nec al</p>
           </div>
-          <div class="js-slideswap slideswap-slide">
+          <div class="slideswap-slide">
             <img src="https://i.imgur.com/xChSYLN.jpg" width="450" height="554" loading="lazy" alt="Slide 3" style="max-width: 100%; height: auto;">
           </div>
-          <div class="js-slideswap slideswap-slide">
+          <div class="slideswap-slide">
             <img src="https://i.imgur.com/XkOJobu.png" class="js-slideswap-image" loading="lazy" alt="Slide 4" style="max-width: 100%; height: auto;">
           </div>
-          <div class="js-slideswap slideswap-slide">
+          <div class="slideswap-slide">
             <img src="https://i.imgur.com/gJV54Fl.png" class="js-slideswap-image" loading="lazy" alt="Slide 5" style="max-width: 100%; height: auto;">
           </div>
         </div>
@@ -92,9 +92,9 @@
       </main>
     </div>
     <script type="text/javascript">
-      const slider = new Slideswap('#slideswap1', {
-        next: '.js-slideswap-next',
-        prev: '.js-slideswap-prev',
+      const slider = new Slideswap('#slideswap-1', {
+        next: '#slider-controls-1 .js-slideswap-next',
+        prev: '#slider-controls-1 .js-slideswap-prev',
         infinite: true
       });
       
@@ -102,7 +102,7 @@
       const removeSlideswap = document.querySelector('.js-remove-slideswap');
       addSlideswap.addEventListener('click', () => {
         const slide = document.createElement('div');
-        slide.classList.add('js-slideswap', 'slideswap-slide');
+        slide.classList.add('slideswap-slide');
         slide.innerHTML = `
           <h2>Slide 6</h2>
           <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam euismod, nisl eget aliquam ultricies, nunc nunc aliquet nunc, nec al</p>
