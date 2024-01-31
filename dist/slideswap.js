@@ -152,8 +152,8 @@
       if (this.element.getAttribute("data-slideswap-initialized") === "true") {
         throw new Error("slideswap: element already initialized");
       }
-      this.transitionDuration = getTransitionDurations(this.element);
-      this.transitionTimer = null;
+      this.transitionHeightDuration = getTransitionDurations(this.element);
+      this.transitionHeightTimer = null;
       shallowMerge(
         this.options,
         options
@@ -225,9 +225,9 @@
     setCurrentSlide(index) {
       if (!this.slides || !this.slides.length)
         return;
-      if (this.transitionTimer) {
-        clearTimeout(this.transitionTimer);
-        this.transitionTimer = null;
+      if (this.transitionHeightTimer) {
+        clearTimeout(this.transitionHeightTimer);
+        this.transitionHeightTimer = null;
       }
       if (index === void 0 || index === null)
         return;
@@ -255,12 +255,12 @@
               this.element.style.height = `${currentSlide.offsetHeight}px`;
           });
         }
-        this.transitionTimer = setTimeout(() => {
+        this.transitionHeightTimer = setTimeout(() => {
           currentSlide.style.position = "relative";
           this.element.style.height = "initial";
           reset = true;
-          this.transitionTimer = null;
-        }, this.transitionDuration["height"]);
+          this.transitionHeightTimer = null;
+        }, this.transitionHeightDuration["height"]);
       }
       for (let i = 0; i < this.slides.length; i++) {
         const slide = this.slides[i];

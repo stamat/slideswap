@@ -70,8 +70,8 @@ export default class Slideswap {
       throw new Error('slideswap: element already initialized')
     }
 
-    this.transitionDuration = getTransitionDurations(this.element)
-    this.transitionTimer = null
+    this.transitionHeightDuration = getTransitionDurations(this.element)
+    this.transitionHeightTimer = null
 
     shallowMerge(
       this.options,
@@ -153,9 +153,9 @@ export default class Slideswap {
 
   setCurrentSlide(index) {
     if (!this.slides || !this.slides.length) return
-    if (this.transitionTimer) {
-      clearTimeout(this.transitionTimer)
-      this.transitionTimer = null
+    if (this.transitionHeightTimer) {
+      clearTimeout(this.transitionHeightTimer)
+      this.transitionHeightTimer = null
     }
     if (index === undefined || index === null) return
     if (index < 0 || index >= this.slides.length) return
@@ -184,12 +184,12 @@ export default class Slideswap {
         })
       }
    
-      this.transitionTimer = setTimeout(() => {
+      this.transitionHeightTimer = setTimeout(() => {
         currentSlide.style.position = 'relative'
         this.element.style.height = 'initial'
         reset = true
-        this.transitionTimer = null
-      }, this.transitionDuration['height'])
+        this.transitionHeightTimer = null
+      }, this.transitionHeightDuration['height'])
     }
 
     for (let i = 0; i < this.slides.length; i++) {
