@@ -125,6 +125,9 @@
   // slideswap.js
   var Slideswap = class {
     constructor(element, options) {
+      this.init(element, options);
+    }
+    init(element, options) {
       this.element = element;
       this.currentIndex = 0;
       this.slides = null;
@@ -152,8 +155,10 @@
       if (this.element.getAttribute("data-slideswap-initialized") === "true") {
         throw new Error("slideswap: element already initialized");
       }
-      this.transitionHeightDuration = getTransitionDurations(this.element);
+      this.transitionHeightDuration = getTransitionDurations(this.element)["height"] || 0;
       this.transitionHeightTimer = null;
+      this.transitionSlideDuration = 0;
+      this.transitionSlideTimer = null;
       shallowMerge(
         this.options,
         options
@@ -165,20 +170,23 @@
       this.setupSlides();
       if (this.options.swipe)
         this.setupSwipe();
+      this.dispatchEvent("init");
     }
     setupSwipe() {
-      onSwipe(this.element, (e) => {
+      this.swipe = onSwipe(this.element, (e) => {
         if (!e.horizontal)
           return;
         e.horizontalDirection === "left" ? this.next() : this.previous();
       }, this.options.swipeThreshold, this.options.swipeTimeThreshold);
-      this.element.addEventListener("swipestart", () => {
-        this.element.classList.add(this.options.swipeActiveClass);
-      });
-      this.element.addEventListener("swipeend", () => {
-        this.element.classList.remove(this.options.swipeActiveClass);
-      });
+      this.element.addEventListener("swipestart", this.onSwipeStart.bind(this));
+      this.element.addEventListener("swipeend", this.onSwipeEnd.bind(this));
       this.element.classList.add(this.options.swipeClass);
+    }
+    onSwipeStart() {
+      this.element.classList.add(this.options.swipeActiveClass);
+    }
+    onSwipeEnd() {
+      this.element.classList.remove(this.options.swipeActiveClass);
     }
     bindControls() {
       if (!this.options.next && !this.options.prev)
@@ -221,6 +229,7 @@
       if (!this.options.adaptiveHeight) {
         this.element.style.height = `${this.maxHeight}px`;
       }
+      this.transitionSlideDuration = getTransitionDurations(this.getCurrentSlide())["opacity"] || 0;
     }
     setCurrentSlide(index) {
       if (!this.slides || !this.slides.length)
@@ -229,12 +238,19 @@
         clearTimeout(this.transitionHeightTimer);
         this.transitionHeightTimer = null;
       }
+      if (this.transitionSlideTimer) {
+        clearTimeout(this.transitionSlideTimer);
+        this.transitionSlideTimer = null;
+      }
       if (index === void 0 || index === null)
         return;
       if (index < 0 || index >= this.slides.length)
         return;
       if (this.options.adaptiveHeight)
         this.element.style.height = `${this.slides[this.currentIndex].offsetHeight}px`;
+      const previousIndex = this.currentIndex;
+      if (index !== previousIndex)
+        this.dispatchEvent("beforechange", { index, previousIndex });
       this.currentIndex = index;
       this.element.setAttribute("data-slideswap-current-index", this.currentIndex);
       const currentSlide = this.slides[index];
@@ -248,7 +264,9 @@
       let reset = false;
       if (this.options.adaptiveHeight) {
         this.element.style.height = `${currentSlide.offsetHeight}px`;
-        const image = this.getCurrentSlide().querySelector(this.options.imageSelector);
+        let image = currentSlide.querySelector(this.options.imageSelector);
+        if (!image)
+          image = currentSlide.querySelector("img");
         if (image) {
           image.addEventListener("load", () => {
             if (!reset)
@@ -260,8 +278,13 @@
           this.element.style.height = "initial";
           reset = true;
           this.transitionHeightTimer = null;
-        }, this.transitionHeightDuration["height"]);
+        }, this.transitionHeightDuration);
       }
+      this.transitionSlideTimer = setTimeout(() => {
+        this.transitionSlideTimer = null;
+        if (index !== previousIndex)
+          this.dispatchEvent("change", { index, previousIndex });
+      }, this.transitionSlideDuration);
       for (let i = 0; i < this.slides.length; i++) {
         const slide = this.slides[i];
         if (i === index)
@@ -274,6 +297,18 @@
         slide.style.pointerEvents = "none";
         slide.style.position = "absolute";
       }
+    }
+    dispatchEvent(type, options = {}) {
+      if (!this.slides || !this.slides.length)
+        return;
+      const event = new CustomEvent(`slideswap:${type}`, {
+        detail: {
+          ...options,
+          slideswap: this
+        }
+      });
+      this.element.dispatchEvent(event);
+      document.dispatchEvent(event);
     }
     getCurrentIndex() {
       if (!this.slides || !this.slides.length)
@@ -312,6 +347,7 @@
       this.setCurrentSlide(this.getPreviousIndex());
     }
     destroy() {
+      this.dispatchEvent("destroy", { element: this.element, slides: this.slides, options: this.options, currentIndex: this.currentIndex, maxHeight: this.maxHeight });
       this.element = null;
       this.slides = null;
       this.options = null;
@@ -321,6 +357,11 @@
         this.options.next.removeEventListener("click", this.next.bind(this));
       if (this.options.prev)
         this.options.prev.removeEventListener("click", this.previous.bind(this));
+      if (this.options.swipe)
+        this.swipe.destroy();
+      this.swipe = null;
+      this.element.removeEventListener("swipestart", this.onSwipeStart.bind(this));
+      this.element.removeEventListener("swipeend", this.onSwipeEnd.bind(this));
     }
     add(slide, index) {
       if (!slide || !(slide instanceof HTMLElement))

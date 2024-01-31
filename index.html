@@ -114,6 +114,16 @@
         const index = removeSlideswap.getAttribute('data-index');
         slider.remove(index);
       });
+
+      document.addEventListener('slideswap:beforechange', (e) => {
+        console.log('beforechange', new Date().getTime());
+        console.log(e.detail);
+      });
+
+      document.addEventListener('slideswap:change', (e) => {
+        console.log('change', new Date().getTime());
+        console.log(e.detail);
+      });
     </script>
     <!-- Place this tag in your head or just before your close body tag. -->
     <script async defer src="https://buttons.github.io/buttons.js"></script>

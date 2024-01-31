@@ -36,10 +36,13 @@ import { shallowMerge, getTransitionDurations, onSwipe, insertBeforeElement } fr
  * }
  * @todo bullet navigation
  * @todo autoplay
- * @todo events
  */
 export default class Slideswap {
   constructor(element, options) {
+    this.init(element, options)
+  }
+
+  init(element, options) {
     this.element = element
     this.currentIndex = 0
     this.slides = null
@@ -70,8 +73,10 @@ export default class Slideswap {
       throw new Error('slideswap: element already initialized')
     }
 
-    this.transitionHeightDuration = getTransitionDurations(this.element)
+    this.transitionHeightDuration = getTransitionDurations(this.element)['height'] || 0
     this.transitionHeightTimer = null
+    this.transitionSlideDuration = 0
+    this.transitionSlideTimer = null
 
     shallowMerge(
       this.options,
@@ -87,23 +92,39 @@ export default class Slideswap {
     this.setupSlides()
     
     if (this.options.swipe) this.setupSwipe()
+    
+    /**
+     * @event Slideswap#init
+     * @type {object}
+     * @property {object} detail - The event details
+     * @property {Slideswap} detail.slideswap - The initialized slideshow
+     * @example
+     * document.addEventListener('slideswap:init', (e) => {
+     *  console.log(e.detail.slideswap)
+     * })
+     */
+    this.dispatchEvent('init')
   }
 
+
   setupSwipe() {
-    onSwipe(this.element, (e) => {
+    this.swipe = onSwipe(this.element, (e) => {
       if (!e.horizontal) return
       e.horizontalDirection === 'left' ? this.next() : this.previous()
     }, this.options.swipeThreshold, this.options.swipeTimeThreshold)
 
-    this.element.addEventListener('swipestart', () => {
-      this.element.classList.add(this.options.swipeActiveClass)
-    })
-
-    this.element.addEventListener('swipeend', () => {
-      this.element.classList.remove(this.options.swipeActiveClass)
-    })
+    this.element.addEventListener('swipestart', this.onSwipeStart.bind(this))
+    this.element.addEventListener('swipeend', this.onSwipeEnd.bind(this))
 
     this.element.classList.add(this.options.swipeClass)
+  }
+
+  onSwipeStart() {
+    this.element.classList.add(this.options.swipeActiveClass)
+  }
+
+  onSwipeEnd() {
+    this.element.classList.remove(this.options.swipeActiveClass)
   }
 
   bindControls() {
@@ -149,6 +170,8 @@ export default class Slideswap {
     if (!this.options.adaptiveHeight) {
       this.element.style.height = `${this.maxHeight}px`
     }
+
+    this.transitionSlideDuration = getTransitionDurations(this.getCurrentSlide())['opacity'] || 0
   }
 
   setCurrentSlide(index) {
@@ -157,10 +180,33 @@ export default class Slideswap {
       clearTimeout(this.transitionHeightTimer)
       this.transitionHeightTimer = null
     }
+
+    if (this.transitionSlideTimer) {
+      clearTimeout(this.transitionSlideTimer)
+      this.transitionSlideTimer = null
+    }
+
     if (index === undefined || index === null) return
     if (index < 0 || index >= this.slides.length) return
     
     if (this.options.adaptiveHeight) this.element.style.height = `${this.slides[this.currentIndex].offsetHeight}px`
+    const previousIndex = this.currentIndex
+
+    /**
+     * @event Slideswap#beforechange
+     * @type {object}
+     * @property {object} detail - The event details
+     * @property {Slideswap} detail.slideswap - The slideshow
+     * @property {Number} detail.index - The index of the slide that will be shown
+     * @property {Number} detail.previousIndex - The index of the slide that is currently shown
+     * @example
+     * document.addEventListener('slideswap:beforechange', (e) => {
+     *  console.log(e.details.slideswap)
+     *  console.log(e.detail.index)
+     *  console.log(e.detail.previousIndex)
+     * })
+     */
+    if (index !== previousIndex) this.dispatchEvent('beforechange', { index: index, previousIndex: previousIndex })
 
     this.currentIndex = index
     this.element.setAttribute('data-slideswap-current-index', this.currentIndex)
@@ -177,20 +223,40 @@ export default class Slideswap {
     if (this.options.adaptiveHeight) {
       this.element.style.height = `${currentSlide.offsetHeight}px`
 
-      const image = this.getCurrentSlide().querySelector(this.options.imageSelector)
+      let image = currentSlide.querySelector(this.options.imageSelector)
+      if (!image) image = currentSlide.querySelector('img')
       if (image) {
         image.addEventListener('load', () => {
           if (!reset) this.element.style.height = `${currentSlide.offsetHeight}px`
         })
       }
-   
+      
       this.transitionHeightTimer = setTimeout(() => {
         currentSlide.style.position = 'relative'
         this.element.style.height = 'initial'
         reset = true
         this.transitionHeightTimer = null
-      }, this.transitionHeightDuration['height'])
+      }, this.transitionHeightDuration)
     }
+
+    this.transitionSlideTimer = setTimeout(() => {
+      this.transitionSlideTimer = null
+      /**
+       * @event Slideswap#change
+       * @type {object}
+       * @property {object} detail - The event details
+       * @property {Slideswap} detail.slideswap - The slideshow
+       * @property {Number} detail.index - The index of the slide that will be shown
+       * @property {Number} detail.previousIndex - The index of the slide that is currently shown
+       * @example
+       * document.addEventListener('slideswap:change', (e) => {
+       *  console.log(e.details.slideswap)
+       *  console.log(e.detail.index)
+       *  console.log(e.detail.previousIndex)
+       * })
+       */
+      if (index !== previousIndex) this.dispatchEvent('change', { index: index, previousIndex: previousIndex })
+    }, this.transitionSlideDuration)
 
     for (let i = 0; i < this.slides.length; i++) {
       const slide = this.slides[i]
@@ -203,6 +269,18 @@ export default class Slideswap {
       slide.style.pointerEvents = 'none'
       slide.style.position = 'absolute'
     }
+  }
+
+  dispatchEvent(type, options = {}) {
+    if (!this.slides || !this.slides.length) return
+    const event = new CustomEvent(`slideswap:${type}`, {
+      detail: {
+        ...options,
+        slideswap: this
+      }
+    })
+    this.element.dispatchEvent(event)
+    document.dispatchEvent(event)
   }
 
   getCurrentIndex() {
@@ -240,6 +318,25 @@ export default class Slideswap {
   }
 
   destroy() {
+    /**
+     * @event Slideswap#destroy
+     * @type {object}
+     * @property {object} detail - The event details
+     * @property {HTMLElement} detail.element - The slideshow element
+     * @property {NodeList} detail.slides - The slides
+     * @property {Object} detail.options - The slideshow options
+     * @property {Number} detail.currentIndex - The index of the current slide
+     * @property {Number} detail.maxHeight - The height of the tallest slide
+     * @example
+     * document.addEventListener('slideswap:destroy', (e) => {
+     *  console.log(e.details.element)
+     *  console.log(e.details.slides)
+     *  console.log(e.details.options)
+     *  console.log(e.details.currentIndex)
+     *  console.log(e.details.maxHeight)
+     * })
+     */
+    this.dispatchEvent('destroy', { element: this.element, slides: this.slides, options: this.options, currentIndex: this.currentIndex, maxHeight: this.maxHeight})
     this.element = null
     this.slides = null
     this.options = null
@@ -248,6 +345,11 @@ export default class Slideswap {
 
     if (this.options.next) this.options.next.removeEventListener('click', this.next.bind(this))
     if (this.options.prev) this.options.prev.removeEventListener('click', this.previous.bind(this))
+
+    if (this.options.swipe) this.swipe.destroy()
+    this.swipe = null
+    this.element.removeEventListener('swipestart', this.onSwipeStart.bind(this))
+    this.element.removeEventListener('swipeend', this.onSwipeEnd.bind(this))
   }
 
   add(slide, index) {
