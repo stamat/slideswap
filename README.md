@@ -145,7 +145,7 @@ Events are triggered for each instance element and for the document. The event d
 | Method | Description |
 | --- | --- |
 | next() | Goes to the next slide. |
-| prev() | Goes to the previous slide. |
+| previous() | Goes to the previous slide. |
 | setCurrentSlide(index) | Goes to a specific slide. |
 | getCurrentSlide() | Returns the current slide index. |
 | getNextIndex() | Returns the next slide index. |
